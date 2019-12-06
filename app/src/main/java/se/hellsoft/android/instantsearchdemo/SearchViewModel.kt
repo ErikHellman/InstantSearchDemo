@@ -9,11 +9,9 @@ import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import kotlinx.coroutines.channels.ReceiveChannel
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.conflate
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.*
 
 sealed class SearchResult
 class ValidResult(val result: List<String>) : SearchResult()
@@ -26,9 +24,9 @@ class SearchViewModel(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ViewModel() {
     @VisibleForTesting
-    internal val queryChannel = Channel<String>()
+    internal val queryChannel = ConflatedBroadcastChannel<String>()
     @ExperimentalCoroutinesApi
-    private val queryFlow = queryChannel.receiveAsFlow().conflate()
+    private val queryFlow = queryChannel.asFlow()
 
     @ExperimentalCoroutinesApi
     @VisibleForTesting
