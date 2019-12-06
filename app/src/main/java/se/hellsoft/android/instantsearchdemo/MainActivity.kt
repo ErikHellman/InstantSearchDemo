@@ -23,7 +23,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private val searchAdapter = SearchAdapter()
 
-    private val viewModel:SearchViewModel by viewModels()
+    private val viewModel:SearchViewModel by viewModels { SearchViewModel.Factory(assets) }
 
     @ExperimentalCoroutinesApi
     override fun onCreate(savedInstanceState: Bundle?) {
