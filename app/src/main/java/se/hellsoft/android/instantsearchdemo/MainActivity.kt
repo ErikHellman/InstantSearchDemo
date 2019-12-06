@@ -15,6 +15,7 @@ import androidx.lifecycle.observe
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import se.hellsoft.android.instantsearchdemo.databinding.ActivityMainBinding
@@ -23,7 +24,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private val searchAdapter = SearchAdapter()
 
-    private val viewModel:SearchViewModel by viewModels { SearchViewModel.Factory(assets) }
+    private val viewModel:SearchViewModel by viewModels { SearchViewModel.Factory(assets, Dispatchers.IO) }
 
     @ExperimentalCoroutinesApi
     override fun onCreate(savedInstanceState: Bundle?) {
