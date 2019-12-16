@@ -1,60 +1,82 @@
 package se.hellsoft.android.instantsearchdemo
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.test.TestCoroutineDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runBlockingTest
 import kotlinx.coroutines.test.setMain
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TestRule
-import org.mockito.ArgumentMatchers.anyString
 
 class SearchViewModelTest {
     @get:Rule
     var rule: TestRule = InstantTaskExecutorRule()
 
+    val mainDispatcher = TestCoroutineDispatcher()
+
     @Before
     fun setUp() {
-        Dispatchers.setMain(Dispatchers.Unconfined)
+        Dispatchers.setMain(mainDispatcher)
+    }
+
+    @After
+    fun teardown() {
+        Dispatchers.resetMain()
     }
 
     @Test
-    fun testInstantSearch() = runBlocking {
-        val searchApi = mock<SearchApi> {
-            on { performSearch(anyString()) } doReturn listOf("aaa", "aab", "baa")
-        }
-        val viewModel = SearchViewModel(
-            searchApi,
-            Dispatchers.Unconfined
+    fun testInstantSearch() = mainDispatcher.runBlockingTest {
+        // GIVEN
+        val fakeApi = FakeApi()
+        val actualQueries = mutableListOf<String>()
+        val expectedQueries = listOf("aa", "bbb", "ccc", "ddd actual query")
+
+        val subject = SearchViewModel(
+            fakeApi,
+            mainDispatcher
         )
 
-        println("Start collecting")
-        val collectJob = launch {
-            viewModel.internalSearchResult.collect {
-                println("Got search result: $it")
+        // start collecting flows in a new coroutine
+        val collectParent = launch {
+            // collect the flow to trigger the debouncing behavior
+            subject.internalSearchResult.launchIn(this)
 
-            }
+            // make sure we're actually sending all queries through – since we're modifying
+            // execution order with TestCoroutineDispatcher. This is just a sanity check.
+            subject.queryChannel.asFlow().mapLatest { query ->
+                actualQueries.add(query)
+            }.launchIn(this)
         }
 
-        println("Start searching")
+        // WHEN
+        for (query in expectedQueries) {
+            subject.queryChannel.send(query)
+            advanceTimeBy(35) // make sure a small time advance still keeps debouncing
+        }
 
-        viewModel.queryChannel.send("aa")
-        viewModel.queryChannel.send("bbb")
-        viewModel.queryChannel.send("ccc")
-        viewModel.queryChannel.send("dd")
-        delay(600)
-        println("advanceTimeBy")
+        // actually trigger the debounce delay
+        advanceTimeBy(500)
 
-        println("Done")
+        // need to cancel all the coroutines launched for collection
+        collectParent.cancel()
 
-        viewModel.queryChannel.close()
-//
-        return@runBlocking
+        // THEN
+        assert(fakeApi.actualQueries == listOf("ddd actual query")) { "Only saw one search" }
+        assert(actualQueries == expectedQueries) { "all queries were sent, then debounced" }
+    }
+
+    class FakeApi: SearchApi {
+        val actualQueries = mutableListOf<String>()
+
+        override fun performSearch(query: String): List<String> {
+            actualQueries.add(query)
+            return listOf()
+        }
+
     }
 }
