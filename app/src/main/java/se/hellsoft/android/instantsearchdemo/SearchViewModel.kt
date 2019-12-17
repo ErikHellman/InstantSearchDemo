@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import kotlinx.coroutines.channels.ReceiveChannel
@@ -31,28 +32,21 @@ class SearchViewModel(
     @ExperimentalCoroutinesApi
     @VisibleForTesting
     internal val internalSearchResult = queryFlow
+        .debounce(SEARCH_DELAY_MS)
         .mapLatest {
-            try {
-                println("mapLatest: $it")
-                delay(SEARCH_DELAY_MS)
-                if (it.length >= MIN_QUERY_LENGTH) {
-                    val searchResult = withContext(ioDispatcher) {
-                        searchApi.performSearch(it)
-                    }
-                    Log.d(TAG, "Search result: ${searchResult.size} hits")
-
-                    if (searchResult.isNotEmpty()) {
-                        ValidResult(searchResult)
-                    } else {
-                        EmptyResult
-                    }
-                } else {
-                    EmptyQuery
+            if (it.length >= MIN_QUERY_LENGTH) {
+                val searchResult = withContext(ioDispatcher) {
+                    searchApi.performSearch(it)
                 }
-            } catch (e: CancellationException) {
-                Log.w(TAG, "mapLatest got cancelled!")
-                println("mapLatest got cancelled!")
-                throw e
+                println("Search result: ${searchResult.size} hits")
+
+                if (searchResult.isNotEmpty()) {
+                    ValidResult(searchResult)
+                } else {
+                    EmptyResult
+                }
+            } else {
+                EmptyQuery
             }
         }
         .catch { ErrorResult(it) }
