@@ -1,13 +1,15 @@
 package se.hellsoft.android.instantsearchdemo
 
+import android.content.res.AssetManager
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.*
+import junit.framework.Assert.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runBlockingTest
 import kotlinx.coroutines.test.setMain
 import org.junit.Before
 import org.junit.Rule
@@ -25,36 +27,54 @@ class SearchViewModelTest {
     }
 
     @Test
-    fun testInstantSearch() = runBlocking {
-        val searchApi = mock<SearchApi> {
-            on { performSearch(anyString()) } doReturn listOf("aaa", "aab", "baa")
+    fun testInstantSearch() = runBlockingTest {
+//        val searchApi = mock<SearchApi> {
+//            on { performSearch(anyString()) } doReturn listOf("aaa", "aab", "baa")
+//        }
+        val assets = mock<AssetManager> {
+            on { open(anyString()) } doReturn ClassLoader.getSystemResourceAsStream("words_alpha.txt")
         }
+
         val viewModel = SearchViewModel(
-            searchApi,
+            SearchRepository(assets),
             Dispatchers.Unconfined
         )
 
         println("Start collecting")
-        val collectJob = launch {
-            viewModel.internalSearchResult.collect {
-                println("Got search result: $it")
+//        launch {
+//        }
 
+        println("Start searching")
+        launch {
+            viewModel.internalSearchResult.collect {
+                println("Collected $it")
+                assertTrue(it is ValidResult)
+                it as ValidResult
+                assertEquals(listOf("antitheses"), it.result)
             }
         }
 
-        println("Start searching")
 
-        viewModel.queryChannel.send("aa")
-        viewModel.queryChannel.send("bbb")
-        viewModel.queryChannel.send("ccc")
-        viewModel.queryChannel.send("dd")
-        delay(600)
-        println("advanceTimeBy")
 
-        println("Done")
+        viewModel.queryChannel.send("")
+        viewModel.queryChannel.send("an")
+        viewModel.queryChannel.send("ant")
+        viewModel.queryChannel.send("anti")
+        advanceTimeBy(600)
+
+        viewModel.queryChannel.send("antit")
+        viewModel.queryChannel.send("antith")
+        viewModel.queryChannel.send("antithe")
+        viewModel.queryChannel.send("antithes")
+        viewModel.queryChannel.send("antithese")
+        viewModel.queryChannel.send("antitheses")
+
+        advanceTimeBy(600)
 
         viewModel.queryChannel.close()
-//
-        return@runBlocking
+
+        cleanupTestCoroutines()
+
+        return@runBlockingTest
     }
 }
