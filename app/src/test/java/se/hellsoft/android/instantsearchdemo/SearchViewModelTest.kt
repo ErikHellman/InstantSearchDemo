@@ -1,8 +1,13 @@
 package se.hellsoft.android.instantsearchdemo
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestCoroutineDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runBlockingTest
@@ -13,6 +18,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TestRule
 
+@FlowPreview
+@ExperimentalCoroutinesApi
 class SearchViewModelTest {
     @get:Rule
     var rule: TestRule = InstantTaskExecutorRule()
@@ -70,13 +77,12 @@ class SearchViewModelTest {
         assert(actualQueries == expectedQueries) { "all queries were sent, then debounced" }
     }
 
-    class FakeApi: SearchApi {
+    class FakeApi : SearchApi {
         val actualQueries = mutableListOf<String>()
 
-        override fun performSearch(query: String): List<String> {
+        override suspend fun performSearch(query: String): List<String> {
             actualQueries.add(query)
             return listOf()
         }
-
     }
 }

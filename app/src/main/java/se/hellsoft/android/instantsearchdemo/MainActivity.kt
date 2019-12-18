@@ -1,13 +1,12 @@
 package se.hellsoft.android.instantsearchdemo
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.doAfterTextChanged
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.lifecycleScope
@@ -17,6 +16,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.launch
 import se.hellsoft.android.instantsearchdemo.databinding.ActivityMainBinding
 
@@ -24,15 +24,21 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private val searchAdapter = SearchAdapter()
 
-    private val viewModel:SearchViewModel by viewModels { SearchViewModel.Factory(assets, Dispatchers.IO) }
+    private val viewModel: SearchViewModel by viewModels {
+        SearchViewModel.Factory(
+            assets,
+            Dispatchers.IO
+        )
+    }
 
+    @FlowPreview
     @ExperimentalCoroutinesApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
         binding.searchResult.adapter = searchAdapter
         viewModel.searchResult.observe(this) {
-            when(it) {
+            when (it) {
                 is ValidResult -> {
                     binding.otherResultText.visibility = View.GONE
                     binding.searchResult.visibility = View.VISIBLE
@@ -59,7 +65,18 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        binding.searchText.doAfterTextChanged { viewModel.search(it.toString()) }
+        // Start with empty query view
+        searchAdapter.submitList(emptyList())
+        binding.otherResultText.visibility = View.VISIBLE
+        binding.searchResult.visibility = View.GONE
+        binding.otherResultText.setText(R.string.not_enough_characters)
+        binding.searchText.requestFocus()
+
+        binding.searchText.doAfterTextChanged {
+            lifecycleScope.launch {
+                viewModel.queryChannel.send(it.toString())
+            }
+        }
     }
 
     class SearchAdapter : ListAdapter<String, SearchViewHolder>(DIFF_CALLBACK) {
@@ -73,10 +90,12 @@ class MainActivity : AppCompatActivity() {
         }
 
         companion object {
-            private val DIFF_CALLBACK = object  : DiffUtil.ItemCallback<String>() {
-                override fun areItemsTheSame(oldItem: String, newItem: String): Boolean = oldItem == newItem
+            private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<String>() {
+                override fun areItemsTheSame(oldItem: String, newItem: String): Boolean =
+                    oldItem == newItem
 
-                override fun areContentsTheSame(oldItem: String, newItem: String): Boolean = oldItem == newItem
+                override fun areContentsTheSame(oldItem: String, newItem: String): Boolean =
+                    oldItem == newItem
             }
         }
     }
