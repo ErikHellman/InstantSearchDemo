@@ -24,6 +24,11 @@ class SearchViewModel(
     private val searchApi: SearchApi,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ViewModel() {
+    companion object {
+        const val SEARCH_DELAY_MS = 500L
+        const val MIN_QUERY_LENGTH = 3
+    }
+
     @ExperimentalCoroutinesApi
     @VisibleForTesting
     internal val queryChannel = BroadcastChannel<String>(Channel.CONFLATED)
@@ -71,11 +76,5 @@ class SearchViewModel(
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
             return SearchViewModel(SearchRepository(assets), dispatcher) as T
         }
-    }
-
-    companion object {
-        private const val TAG = "SearchViewModel"
-        const val SEARCH_DELAY_MS = 500L
-        const val MIN_QUERY_LENGTH = 3
     }
 }
