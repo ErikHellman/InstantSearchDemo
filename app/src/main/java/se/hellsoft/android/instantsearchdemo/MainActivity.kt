@@ -62,6 +62,11 @@ class MainActivity : AppCompatActivity() {
                     binding.searchResult.visibility = View.GONE
                     binding.otherResultText.setText(R.string.not_enough_characters)
                 }
+                is TerminalError -> {
+                    // Something wen't terribly wrong!
+                    println("Our Flow terminated unexpectedly, so we're bailing!")
+                    finish()
+                }
             }
         }
 

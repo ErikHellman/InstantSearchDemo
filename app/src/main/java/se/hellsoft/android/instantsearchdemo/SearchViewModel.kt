@@ -18,6 +18,7 @@ class ValidResult(val result: List<String>) : SearchResult()
 object EmptyResult : SearchResult()
 object EmptyQuery : SearchResult()
 class ErrorResult(val e: Throwable) : SearchResult()
+object TerminalError : SearchResult()
 
 class SearchViewModel(
     private val searchApi: SearchApi,
@@ -49,12 +50,16 @@ class SearchViewModel(
                 } else {
                     EmptyQuery
                 }
-            } catch (e: CancellationException) {
-                println("Search was cancelled!")
-                throw e
+            } catch (e: Throwable) {
+                if (e is CancellationException) {
+                    println("Search was cancelled!")
+                    throw e
+                } else {
+                    ErrorResult(e)
+                }
             }
         }
-        .catch { emit(ErrorResult(it)) }
+        .catch { it: Throwable -> emit(TerminalError) }
 
     @FlowPreview
     @ExperimentalCoroutinesApi
