@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.doAfterTextChanged
@@ -65,6 +66,7 @@ class MainActivity : AppCompatActivity() {
                 is TerminalError -> {
                     // Something wen't terribly wrong!
                     println("Our Flow terminated unexpectedly, so we're bailing!")
+                    Toast.makeText(this, "Unexpected error in SearchRepository!", Toast.LENGTH_SHORT).show()
                     finish()
                 }
             }
