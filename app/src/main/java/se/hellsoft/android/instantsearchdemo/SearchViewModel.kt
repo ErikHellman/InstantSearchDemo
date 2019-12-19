@@ -54,7 +54,7 @@ class SearchViewModel(
                 throw e
             }
         }
-        .catch { ErrorResult(it) }
+        .catch { emit(ErrorResult(it)) }
 
     @FlowPreview
     @ExperimentalCoroutinesApi
