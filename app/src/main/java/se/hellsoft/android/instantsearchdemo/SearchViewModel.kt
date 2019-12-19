@@ -65,11 +65,11 @@ class SearchViewModel(
     @ExperimentalCoroutinesApi
     val searchResult = internalSearchResult.asLiveData()
 
-    class Factory(private val assets: AssetManager, val dispatcher: CoroutineDispatcher) :
+    class Factory(private val assets: AssetManager, private val dispatcher: CoroutineDispatcher) :
         ViewModelProvider.NewInstanceFactory() {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
-            return SearchViewModel(SearchRepository(assets)) as T
+            return SearchViewModel(SearchRepository(assets), dispatcher) as T
         }
     }
 
