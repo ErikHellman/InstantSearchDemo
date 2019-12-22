@@ -4,7 +4,7 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.launch
@@ -55,7 +55,7 @@ class SearchViewModelTest {
 
             // make sure we're actually sending all queries through – since we're modifying
             // execution order with TestCoroutineDispatcher. This is just a sanity check.
-            subject.queryChannel.asFlow().mapLatest { query ->
+            subject.queryChannel.consumeAsFlow().mapLatest { query ->
                 actualQueries.add(query)
             }.launchIn(this)
         }

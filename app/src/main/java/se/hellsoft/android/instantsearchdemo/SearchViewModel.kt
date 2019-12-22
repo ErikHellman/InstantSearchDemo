@@ -6,10 +6,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.asLiveData
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.mapLatest
 
@@ -31,13 +30,13 @@ class SearchViewModel(
 
     @ExperimentalCoroutinesApi
     @VisibleForTesting
-    internal val queryChannel = BroadcastChannel<String>(Channel.CONFLATED)
+    internal val queryChannel = Channel<String>(Channel.CONFLATED)
 
     @FlowPreview
     @ExperimentalCoroutinesApi
     @VisibleForTesting
     internal val internalSearchResult = queryChannel
-        .asFlow()
+        .consumeAsFlow()
         .debounce(SEARCH_DELAY_MS)
         .mapLatest {
             try {
