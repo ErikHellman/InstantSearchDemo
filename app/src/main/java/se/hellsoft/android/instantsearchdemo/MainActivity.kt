@@ -46,7 +46,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.searchText.doAfterTextChanged { editable ->
             lifecycleScope.launch {
-                viewModel.queryChannel.send(editable.toString())
+                viewModel.onSearchTextChanged(editable.toString())
             }
         }
     }

@@ -4,9 +4,6 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestCoroutineDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -40,7 +37,6 @@ class SearchViewModelTest {
     fun testInstantSearch() = mainDispatcher.runBlockingTest {
         // GIVEN
         val fakeApi = FakeApi()
-        val actualQueries = mutableListOf<String>()
         val expectedQueries = listOf("aa", "bbb", "ccc", "ddd actual query")
 
         val subject = SearchViewModel(
@@ -50,19 +46,13 @@ class SearchViewModelTest {
 
         // start collecting flows in a new coroutine
         val collectParent = launch {
-            // collect the flow to trigger the debouncing behavior
-            subject.internalSearchResult.launchIn(this)
-
-            // make sure we're actually sending all queries through – since we're modifying
-            // execution order with TestCoroutineDispatcher. This is just a sanity check.
-            subject.queryChannel.asFlow().mapLatest { query ->
-                actualQueries.add(query)
-            }.launchIn(this)
+            // observe the livedata to collect the flow to trigger the debouncing behavior
+            subject.searchResult.observeForever {}
         }
 
         // WHEN
         for (query in expectedQueries) {
-            subject.queryChannel.send(query)
+            subject.onSearchTextChanged(query)
             advanceTimeBy(35) // make sure a small time advance still keeps debouncing
         }
 
@@ -74,7 +64,6 @@ class SearchViewModelTest {
 
         // THEN
         assert(fakeApi.actualQueries == listOf("ddd actual query")) { "Only saw one search" }
-        assert(actualQueries == expectedQueries) { "all queries were sent, then debounced" }
     }
 
     class FakeApi : SearchApi {
