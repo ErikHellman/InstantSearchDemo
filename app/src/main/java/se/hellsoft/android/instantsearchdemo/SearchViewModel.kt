@@ -1,7 +1,6 @@
 package se.hellsoft.android.instantsearchdemo
 
 import android.content.res.AssetManager
-import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.asLiveData
@@ -29,13 +28,11 @@ class SearchViewModel(
     }
 
     @ExperimentalCoroutinesApi
-    @VisibleForTesting
-    internal val queryChannel = Channel<String>(Channel.CONFLATED)
+    private val queryChannel = Channel<String>(Channel.CONFLATED)
 
     @FlowPreview
     @ExperimentalCoroutinesApi
-    @VisibleForTesting
-    internal val internalSearchResult = queryChannel
+    private val internalSearchResult = queryChannel
         .consumeAsFlow()
         .debounce(SEARCH_DELAY_MS)
         .mapLatest {
@@ -68,6 +65,9 @@ class SearchViewModel(
     @FlowPreview
     @ExperimentalCoroutinesApi
     val searchResult = internalSearchResult.asLiveData()
+
+    @ExperimentalCoroutinesApi
+    suspend fun onSearchTextChanged(text: String) = queryChannel.send(text)
 
     class Factory(private val assets: AssetManager, private val dispatcher: CoroutineDispatcher) :
         ViewModelProvider.NewInstanceFactory() {
